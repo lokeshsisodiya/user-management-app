@@ -57,3 +57,12 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+| Feature | Description |
+|---------|-------------|
+| **User Table** | View all users in a clean, responsive table with ID, Name, and Role |
+| **Search Users** | Real-time search by user name (case-insensitive) |
+| **Sort Users** | Toggle between A-Z and Z-A sorting with one click |
+| **Add User Modal** | Beautiful popup form to add new users without leaving the page |
+| **Data Persistence** | Users remain even after page refresh using Local Storage |
+| **Form Validation** | Prevents empty submissions with disabled button |
+https://github.com/lokeshsisodiya/user-management-app.git

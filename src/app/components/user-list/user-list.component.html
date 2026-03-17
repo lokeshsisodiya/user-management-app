@@ -1,0 +1,44 @@
+<div class="container">
+  <h2>User Management</h2>
+  <div class="add-user-section">
+    <button class="open-modal-btn" (click)="openAddUserModal()">
+      <span class="plus-icon">+</span> Add New User
+    </button>
+  </div>
+
+  <app-add-user 
+    *ngIf="showAddUserModal"
+    (userAdded)="addNewUser($event)"
+    (closeModal)="closeAddUserModal()"
+  ></app-add-user>
+  <div class="search-box">
+    <input 
+      type="text" 
+      placeholder="Search by name..." 
+      [(ngModel)]="searchText"
+      (input)="searchUsers()"
+    >
+    <button (click)="sortUsers()">
+      Sort by Name ({{ sortAscending ? 'A to Z' : 'Z to A' }})
+    </button>
+  </div>
+  <table class="user-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Role</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let user of filteredUsers">
+        <td>{{ user.id }}</td>
+        <td>{{ user.name }}</td>
+        <td>{{ user.role }}</td>
+      </tr>
+      <tr *ngIf="filteredUsers.length === 0">
+        <td colspan="3">No users found</td>
+      </tr>
+    </tbody>
+  </table>
+</div>

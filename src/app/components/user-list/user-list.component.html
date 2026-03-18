@@ -1,17 +1,22 @@
 <div class="container">
   <h2>User Management</h2>
-  
-  <div *ngIf="isLoading" class="loading-spinner">
-    Loading users... ⏳
+
+  <div class="loading-overlay" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading users...</p>
   </div>
+
   <div class="add-user-section">
     <button 
       class="open-modal-btn" 
       (click)="openAddUserModal()"
-      [disabled]="isAdding || isLoading"
+      [disabled]="isAdding"
     >
-      <span class="plus-icon">+</span> 
-      {{ isAdding ? 'Adding...' : 'Add New User' }}
+      <span class="button-content">
+        <span class="plus-icon" *ngIf="!isAdding">+</span>
+        <span class="button-spinner" *ngIf="isAdding"></span>
+        {{ isAdding ? 'Adding...' : 'Add New User' }}
+      </span>
     </button>
   </div>
   <app-add-user 
@@ -29,14 +34,15 @@
     >
     <button 
       (click)="sortUsers()"
-      [disabled]="isLoading || filteredUsers.length === 0"
+      [disabled]="isLoading"
     >
       Sort by Name ({{ sortAscending ? 'A to Z' : 'Z to A' }})
     </button>
-    
-    <span *ngIf="isSearching" class="searching-text">
-      Searching...
-    </span>
+  </div>
+
+  <div class="error-message" *ngIf="loadingError">
+    {{ loadingError }}
+    <button (click)="loadUsers()">Retry</button>
   </div>
 
   <table class="user-table">
@@ -49,32 +55,43 @@
       </tr>
     </thead>
     <tbody>
-      <tr *ngIf="isLoading">
-        <td colspan="4" class="text-center">
-          Loading users... Please wait.
+      <tr *ngIf="isLoading" class="loading-row">
+        <td colspan="4">
+          <div class="table-loader">
+            <div class="spinner"></div>
+            <span>Fetching users...</span>
+          </div>
         </td>
       </tr>
-      
+
       <tr *ngIf="!isLoading && filteredUsers.length === 0">
-        <td colspan="4" class="text-center">
-          No users found
+        <td colspan="4" class="no-data">
+          <div class="no-data-content">
+            <span class="no-data-icon"></span>
+            <p>No users found</p>
+            <button class="add-first-btn" (click)="openAddUserModal()">
+              Add First User
+            </button>
+          </div>
         </td>
       </tr>
-      
-      <tr *ngFor="let user of filteredUsers">
-        <td>{{ user.id }}</td>
-        <td>{{ user.name }}</td>
-        <td>{{ user.role }}</td>
-        <td>
-          <button 
-            class="delete-btn" 
-            (click)="deleteUser(user.id)"
-            [disabled]="isLoading"
-          >
-            Delete
-          </button>
-        </td>
-      </tr>
+      <ng-container *ngIf="!isLoading">
+        <tr *ngFor="let user of filteredUsers">
+          <td>{{ user.id }}</td>
+          <td>{{ user.name }}</td>
+          <td>{{ user.role }}</td>
+          <td>
+            <button 
+              (click)="deleteUser(user.id)" 
+              class="delete-btn"
+              [disabled]="isDeleting"
+            >
+              <span *ngIf="isDeleting" class="small-spinner"></span>
+              <span *ngIf="!isDeleting">Delete</span>
+            </button>
+          </td>
+        </tr>
+      </ng-container>
     </tbody>
   </table>
   <div class="role-filters" *ngIf="!isLoading">
@@ -82,5 +99,9 @@
     <button (click)="filterByRole('Designer')">Designers</button>
     <button (click)="filterByRole('Manager')">Managers</button>
     <button (click)="loadUsers()">All Users</button>
+  </div>
+  <div class="loading-more" *ngIf="isLoading && users.length > 0">
+    <div class="spinner small"></div>
+    <span>Updating list...</span>
   </div>
 </div>

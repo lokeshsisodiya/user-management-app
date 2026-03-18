@@ -1,12 +1,5 @@
 import { Component, OnInit } from '@angular/core';
 import { UserService } from '../../services/user.service';
-interface User {
-  id: number;
-  name: string;
-  role: string;
-  addedOn?: string;
-  lastModified?: string;
-}
 
 @Component({
   selector: 'app-user-list',
@@ -15,14 +8,15 @@ interface User {
   styleUrl: './user-list.component.css'
 })
 export class UserListComponent implements OnInit {
-  users: User[] = [];
-  filteredUsers: User[] = [];
+  users: any[] = [];
+  filteredUsers: any[] = [];
   searchText: string = '';
   sortAscending: boolean = true;
   showAddUserModal: boolean = false;
   isLoading: boolean = false;
   isAdding: boolean = false;
-  isSearching: boolean = false;
+  isDeleting: boolean = false;
+  loadingError: string = '';
 
   constructor(private userService: UserService) { }
 
@@ -32,18 +26,19 @@ export class UserListComponent implements OnInit {
 
   loadUsers(): void {
     this.isLoading = true;
+    this.loadingError = '';
     
     this.userService.getUsers().subscribe({
       next: (users) => {
         this.users = users;
         this.filteredUsers = [...users];
         this.isLoading = false;
-        console.log('Users loaded successfully:', users);
+        console.log('Users loaded:', users);
       },
       error: (error) => {
         console.error('Error loading users:', error);
         this.isLoading = false;
-        alert('Failed to load users. Please try again.');
+        this.loadingError = 'Failed to load users. Please try again.';
       }
     });
   }
@@ -61,9 +56,7 @@ export class UserListComponent implements OnInit {
     
     this.userService.addUser(userData).subscribe({
       next: (newUser) => {
-        console.log('User added successfully:', newUser);
         this.loadUsers();
-        
         this.isAdding = false;
         this.closeAddUserModal();
       },
@@ -75,36 +68,39 @@ export class UserListComponent implements OnInit {
     });
   }
 
-  searchUsers(): void {
-    if (this.searchText.trim()) {
-      this.isSearching = true;
+  deleteUser(id: number): void {
+    if (confirm('Are you sure you want to delete this user?')) {
+      this.isDeleting = true;
       
-      this.userService.searchUsers(this.searchText).subscribe({
-        next: (filtered) => {
-          this.filteredUsers = filtered;
-          this.isSearching = false;
+      this.userService.deleteUser(id).subscribe({
+        next: (success) => {
+          if (success) {
+            this.loadUsers();
+          }
+          this.isDeleting = false;
         },
         error: (error) => {
-          console.error('Error searching users:', error);
-          this.isSearching = false;
-          this.localSearch();
+          console.error('Error deleting user:', error);
+          this.isDeleting = false;
+          alert('Failed to delete user. Please try again.');
         }
       });
+    }
+  }
+
+  searchUsers(): void {
+    if (this.searchText) {
+      this.filteredUsers = this.users.filter(user => 
+        user.name.toLowerCase().includes(this.searchText.toLowerCase())
+      );
     } else {
       this.filteredUsers = [...this.users];
     }
   }
 
-  private localSearch(): void {
-    this.filteredUsers = this.users.filter(user => 
-      user.name.toLowerCase().includes(this.searchText.toLowerCase())
-    );
-  }
-
   sortUsers(): void {
     this.sortAscending = !this.sortAscending;
-    
-    this.filteredUsers = [...this.filteredUsers].sort((a, b) => {
+    this.filteredUsers.sort((a, b) => {
       if (this.sortAscending) {
         return a.name.localeCompare(b.name);
       } else {
@@ -113,24 +109,7 @@ export class UserListComponent implements OnInit {
     });
   }
 
-  deleteUser(id: number): void {
-    if (confirm('Are you sure you want to delete this user?')) {
-      this.userService.deleteUser(id).subscribe({
-        next: (success) => {
-          if (success) {
-            console.log('User deleted successfully');
-            this.loadUsers(); 
-          }
-        },
-        error: (error) => {
-          console.error('Error deleting user:', error);
-          alert('Failed to delete user. Please try again.');
-        }
-      });
-    }
-  }
-
-  filterByRole(role: string): void {
+    filterByRole(role: string): void {
     this.userService.getUsersByRole(role).subscribe({
       next: (filtered) => {
         this.filteredUsers = filtered;

@@ -1,11 +1,9 @@
 <div class="container">
   <h2>User Management</h2>
-
   <div class="loading-overlay" *ngIf="isLoading">
     <div class="spinner"></div>
     <p>Loading users...</p>
   </div>
-
   <div class="add-user-section">
     <button 
       class="open-modal-btn" 
@@ -24,6 +22,58 @@
     (userAdded)="addNewUser($event)"
     (closeModal)="closeAddUserModal()"
   ></app-add-user>
+  <div class="modal-overlay" *ngIf="showUserDetailModal" (click)="closeUserDetail()">
+    <div class="modal-content user-detail-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>User Details</h2>
+        <button class="close-btn" (click)="closeUserDetail()">×</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="detail-loading" *ngIf="isLoadingDetail">
+          <div class="spinner small"></div>
+          <p>Loading user details...</p>
+        </div>
+        <div class="detail-error" *ngIf="detailError">
+          <p>{{ detailError }}</p>
+          <button (click)="loadUserDetails(selectedUser?.id!)">Retry</button>
+        </div>
+        <div class="user-details" *ngIf="!isLoadingDetail && !detailError && selectedUser">
+          <div class="detail-card">
+            <div class="detail-row">
+              <span class="detail-label">ID:</span>
+              <span class="detail-value">#{{ selectedUser.id }}</span>
+            </div>
+            
+            <div class="detail-row">
+              <span class="detail-label">Name:</span>
+              <span class="detail-value">{{ selectedUser.name }}</span>
+            </div>
+            
+            <div class="detail-row">
+              <span class="detail-label">Role:</span>
+              <span class="detail-value">
+                <span class="role-badge">{{ selectedUser.role }}</span>
+              </span>
+            </div>
+            
+            <div class="detail-row" *ngIf="selectedUser.addedOn">
+              <span class="detail-label">Added On:</span>
+              <span class="detail-value">{{ selectedUser.addedOn }}</span>
+            </div>
+            
+            <div class="detail-row" *ngIf="selectedUser.lastModified">
+              <span class="detail-label">Last Modified:</span>
+              <span class="detail-value">{{ selectedUser.lastModified }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="cancel-btn" (click)="closeUserDetail()">Close</button>
+      </div>
+    </div>
+  </div>
   <div class="search-box">
     <input 
       type="text" 
@@ -39,12 +89,10 @@
       Sort by Name ({{ sortAscending ? 'A to Z' : 'Z to A' }})
     </button>
   </div>
-
   <div class="error-message" *ngIf="loadingError">
     {{ loadingError }}
     <button (click)="loadUsers()">Retry</button>
   </div>
-
   <table class="user-table">
     <thead>
       <tr>
@@ -76,11 +124,11 @@
         </td>
       </tr>
       <ng-container *ngIf="!isLoading">
-        <tr *ngFor="let user of filteredUsers">
+        <tr *ngFor="let user of filteredUsers" (click)="viewUserDetails(user)" style="cursor: pointer;">
           <td>{{ user.id }}</td>
           <td>{{ user.name }}</td>
           <td>{{ user.role }}</td>
-          <td>
+          <td (click)="$event.stopPropagation()">
             <button 
               (click)="deleteUser(user.id)" 
               class="delete-btn"
@@ -94,12 +142,14 @@
       </ng-container>
     </tbody>
   </table>
+
   <div class="role-filters" *ngIf="!isLoading">
     <button (click)="filterByRole('Developer')">Developers</button>
     <button (click)="filterByRole('Designer')">Designers</button>
     <button (click)="filterByRole('Manager')">Managers</button>
     <button (click)="loadUsers()">All Users</button>
   </div>
+
   <div class="loading-more" *ngIf="isLoading && users.length > 0">
     <div class="spinner small"></div>
     <span>Updating list...</span>

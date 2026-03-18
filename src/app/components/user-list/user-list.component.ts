@@ -1,6 +1,12 @@
 import { Component, OnInit } from '@angular/core';
 import { UserService } from '../../services/user.service';
-
+export interface User {
+  id: number;
+  name: string;
+  role: string;
+  addedOn?: string;
+  lastModified?: string;
+}
 @Component({
   selector: 'app-user-list',
   standalone: false,
@@ -17,6 +23,10 @@ export class UserListComponent implements OnInit {
   isAdding: boolean = false;
   isDeleting: boolean = false;
   loadingError: string = '';
+  showUserDetailModal: boolean = false;
+  selectedUser: User | null = null;
+  isLoadingDetail: boolean = false;
+  detailError: string = '';   
 
   constructor(private userService: UserService) { }
 
@@ -119,4 +129,37 @@ export class UserListComponent implements OnInit {
       }
     });
   }
+
+    viewUserDetails(user: User): void {
+    console.log('Viewing user:', user);
+    this.selectedUser = user;
+    this.showUserDetailModal = true;
+    this.loadUserDetails(user.id);
+  }
+  loadUserDetails(userId: number): void {
+    this.isLoadingDetail = true;
+    this.detailError = '';
+    
+    this.userService.getUserById(userId).subscribe({
+      next: (user) => {
+        if (user) {
+          this.selectedUser = user;
+        }
+        this.isLoadingDetail = false;
+      },
+      error: (error) => {
+        console.error('Error loading user details:', error);
+        this.isLoadingDetail = false;
+        this.detailError = 'Failed to load user details.';
+      }
+    });
+  }
+  closeUserDetail(): void {
+    this.showUserDetailModal = false;
+    this.selectedUser = null;
+    this.detailError = '';
+    setTimeout(() => {
+    }, 300);
+  }
+
 }

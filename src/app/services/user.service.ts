@@ -1,4 +1,6 @@
 import { Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs';
+import { delay, map } from 'rxjs/operators';
 
 export interface User {
   id: number;
@@ -40,18 +42,22 @@ export class UserService {
     return nextId;
   }
 
-  getUsers(): User[] {
+  getUsers(): Observable<User[]> {
     const users = localStorage.getItem(this.storageKey);
-    return users ? JSON.parse(users) : [];
+    const userArray = users ? JSON.parse(users) : [];
+    return of(userArray).pipe(delay(1000));
   }
 
-  getUserById(id: number): User | undefined {
-    const users = this.getUsers();
-    return users.find(user => user.id === id);
+  getUserById(id: number): Observable<User | undefined> {
+    const users = localStorage.getItem(this.storageKey);
+    const userArray = users ? JSON.parse(users) : [];
+    const user = userArray.find((u: User) => u.id === id);
+    return of(user).pipe(delay(800));
   }
-
-  addUser(user: { name: string; role: string }): User {
-    const users = this.getUsers();
+  addUser(user: { name: string; role: string }): Observable<User> {
+    const usersJson = localStorage.getItem(this.storageKey);
+    const users = usersJson ? JSON.parse(usersJson) : [];
+    
     const newUser: User = {
       id: this.getNextId(),
       name: user.name,
@@ -59,14 +65,18 @@ export class UserService {
       addedOn: new Date().toLocaleString(),
       lastModified: new Date().toLocaleString()
     };
+    
     users.push(newUser);
     localStorage.setItem(this.storageKey, JSON.stringify(users));
-    return newUser;
+    
+    return of(newUser).pipe(delay(1200));
   }
 
-  updateUser(id: number, updatedData: Partial<User>): boolean {
-    const users = this.getUsers();
-    const index = users.findIndex(u => u.id === id);
+  updateUser(id: number, updatedData: Partial<User>): Observable<boolean> {
+    const usersJson = localStorage.getItem(this.storageKey);
+    const users = usersJson ? JSON.parse(usersJson) : [];
+    const index = users.findIndex((u: User) => u.id === id);
+    
     if (index !== -1) {
       users[index] = { 
         ...users[index], 
@@ -74,36 +84,46 @@ export class UserService {
         lastModified: new Date().toLocaleString() 
       };
       localStorage.setItem(this.storageKey, JSON.stringify(users));
-      return true;
+      return of(true).pipe(delay(1000));
     }
-    return false;
+    
+    return of(false).pipe(delay(1000));
   }
 
-  deleteUser(id: number): boolean {
-    const users = this.getUsers();
-    const filteredUsers = users.filter(u => u.id !== id);
+  deleteUser(id: number): Observable<boolean> {
+    const usersJson = localStorage.getItem(this.storageKey);
+    const users = usersJson ? JSON.parse(usersJson) : [];
+    const filteredUsers = users.filter((u: User) => u.id !== id);
+    
     if (filteredUsers.length < users.length) {
       localStorage.setItem(this.storageKey, JSON.stringify(filteredUsers));
-      return true;
+      return of(true).pipe(delay(800));
     }
-    return false;
+    
+    return of(false).pipe(delay(800));
   }
 
-  searchUsers(searchTerm: string): User[] {
-    const users = this.getUsers();
-    return users.filter(user => 
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchTerm.toLowerCase())
+  searchUsers(searchTerm: string): Observable<User[]> {
+    return this.getUsers().pipe(
+      map(users => 
+        users.filter(user => 
+          user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.role.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      )
     );
   }
 
-  getUsersByRole(role: string): User[] {
-    const users = this.getUsers();
-    return users.filter(user => user.role === role);
+  getUsersByRole(role: string): Observable<User[]> {
+    return this.getUsers().pipe(
+      map(users => users.filter(user => user.role === role))
+    );
   }
 
-  getTotalCount(): number {
-    return this.getUsers().length;
+  getTotalCount(): Observable<number> {
+    return this.getUsers().pipe(
+      map(users => users.length)
+    );
   }
 
   clearAllUsers(): void {
@@ -113,7 +133,9 @@ export class UserService {
   }
 
   exportUsers(): string {
-    return JSON.stringify(this.getUsers(), null, 2);
+    const users = localStorage.getItem(this.storageKey);
+    const userArray = users ? JSON.parse(users) : [];
+    return JSON.stringify(userArray, null, 2);
   }
 
   importUsers(usersJson: string): boolean {
@@ -121,7 +143,7 @@ export class UserService {
       const users = JSON.parse(usersJson);
       if (Array.isArray(users)) {
         localStorage.setItem(this.storageKey, usersJson);
-        const maxId = Math.max(...users.map(u => u.id));
+        const maxId = Math.max(...users.map((u: User) => u.id));
         localStorage.setItem(this.lastIdKey, maxId.toString());
         return true;
       }

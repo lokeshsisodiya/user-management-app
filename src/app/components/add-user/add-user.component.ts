@@ -15,9 +15,44 @@ export class AddUserComponent {
     role: ''
   };
 
+  touchedFields = {
+    name: false,
+    role: false
+  };
+
+  showNameError(): boolean {
+    return this.touchedFields.name && !this.newUser.name;
+  }
+
+  showRoleError(): boolean {
+    return this.touchedFields.role && !this.newUser.role;
+  }
+
+  validateField(fieldName: string): void {
+    if (fieldName === 'name') {
+      this.touchedFields.name = true;
+    } else if (fieldName === 'role') {
+      this.touchedFields.role = true;
+    }
+  }
+
+  get isFormTouched(): boolean {
+    return this.touchedFields.name || this.touchedFields.role;
+  }
+
+  isFormValid(): boolean {
+    return this.newUser.name?.trim() !== '' && this.newUser.role !== '';
+  }
+
+  isFormInvalid(): boolean {
+    return !this.isFormValid();
+  }
 
   addUser() {
-    if (this.newUser.name && this.newUser.role) {
+    this.touchedFields.name = true;
+    this.touchedFields.role = true;
+    
+    if (this.isFormValid()) {
       this.userAdded.emit(this.newUser);
       this.resetForm();
       this.closeModal.emit();
@@ -28,6 +63,10 @@ export class AddUserComponent {
     this.newUser = {
       name: '',
       role: ''
+    };
+    this.touchedFields = {
+      name: false,
+      role: false
     };
   }
 

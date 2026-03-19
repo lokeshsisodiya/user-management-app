@@ -1,0 +1,53 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    
+    <div class="modal-header">
+      <h2>Edit User</h2>
+      <button class="close-btn" (click)="close()">×</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="edit-name">Full Name</label>
+        <input 
+          id="edit-name"
+          type="text" 
+          [(ngModel)]="editUser.name" 
+          placeholder="Enter user name"
+          (keyup.enter)="updateUser()"
+          autofocus
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="edit-role">Role</label>
+        <select id="edit-role" [(ngModel)]="editUser.role">
+          <option value="">Select Role</option>
+          <option value="Developer">Developer</option>
+          <option value="Designer">Designer</option>
+          <option value="Manager">Manager</option>
+          <option value="Tester">Tester</option>
+          <option value="HR">HR</option>
+        </select>
+      </div>
+
+      <div class="user-info">
+        <p><strong>User ID:</strong> #{{ user?.id }}</p>
+        <p><strong>Added On:</strong> {{ user?.addedOn }}</p>
+        <p *ngIf="user?.lastModified"><strong>Last Modified:</strong> {{ user?.lastModified }}</p>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="cancel-btn" (click)="close()">Cancel</button>
+      <button 
+        class="save-btn" 
+        (click)="updateUser()"
+        [disabled]="!editUser.name || !editUser.role"
+      >
+        Update User
+      </button>
+    </div>
+
+  </div>
+</div>

@@ -22,8 +22,15 @@
     (userAdded)="addNewUser($event)"
     (closeModal)="closeAddUserModal()"
   ></app-add-user>
+  <app-edit-user
+    *ngIf="showEditUserModal && userToEdit"
+    [user]="userToEdit"
+    (userUpdated)="updateUser($event)"
+    (closeModal)="closeEditModal()"
+  ></app-edit-user>
   <div class="modal-overlay" *ngIf="showUserDetailModal" (click)="closeUserDetail()">
     <div class="modal-content user-detail-modal" (click)="$event.stopPropagation()">
+      
       <div class="modal-header">
         <h2>User Details</h2>
         <button class="close-btn" (click)="closeUserDetail()">×</button>
@@ -39,45 +46,83 @@
           <button (click)="loadUserDetails(selectedUser?.id!)">Retry</button>
         </div>
         <div class="user-details" *ngIf="!isLoadingDetail && !detailError && selectedUser">
-          <div class="detail-card">
-            <div class="detail-row">
-              <span class="detail-label">ID:</span>
-              <span class="detail-value">#{{ selectedUser.id }}</span>
+          <div class="detail-profile">
+            <div class="profile-avatar">
+              {{ selectedUser.name.charAt(0) | uppercase }}
             </div>
-            
-            <div class="detail-row">
-              <span class="detail-label">Name:</span>
-              <span class="detail-value">{{ selectedUser.name }}</span>
-            </div>
-            
-            <div class="detail-row">
-              <span class="detail-label">Role:</span>
-              <span class="detail-value">
-                <span class="role-badge">{{ selectedUser.role }}</span>
+            <div class="profile-info">
+              <h3>{{ selectedUser.name }}</h3>
+              <span class="role-badge" [ngClass]="'role-' + selectedUser.role.toLowerCase()">
+                {{ selectedUser.role }}
               </span>
             </div>
-            
-            <div class="detail-row" *ngIf="selectedUser.addedOn">
-              <span class="detail-label">Added On:</span>
-              <span class="detail-value">{{ selectedUser.addedOn }}</span>
+          </div>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <div class="detail-label">User ID</div>
+              <div class="detail-value">#{{ selectedUser.id }}</div>
             </div>
-            
-            <div class="detail-row" *ngIf="selectedUser.lastModified">
-              <span class="detail-label">Last Modified:</span>
-              <span class="detail-value">{{ selectedUser.lastModified }}</span>
+            <div class="detail-item">
+              <div class="detail-label">Full Name</div>
+              <div class="detail-value">{{ selectedUser.name }}</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">Role</div>
+              <div class="detail-value">
+                <span class="role-text">{{ selectedUser.role }}</span>
+              </div>
+            </div>
+            <div class="detail-item" *ngIf="selectedUser.addedOn">
+              <div class="detail-label">Added On</div>
+              <div class="detail-value">
+                <span class="date-icon"></span>
+                {{ selectedUser.addedOn }}
+              </div>
+            </div>
+            <div class="detail-item" *ngIf="selectedUser.lastModified">
+              <div class="detail-label">Last Modified</div>
+              <div class="detail-value">
+                <span class="time-icon"></span>
+                {{ selectedUser.lastModified }}
+              </div>
+            </div>
+            <div class="detail-item" *ngIf="selectedUser.addedOn">
+              <div class="detail-label">Account Age</div>
+              <div class="detail-value">
+                <span class="calendar-icon"></span>
+                {{ calculateAccountAge(selectedUser.addedOn) }}
+              </div>
             </div>
           </div>
         </div>
       </div>
       <div class="modal-footer">
         <button class="cancel-btn" (click)="closeUserDetail()">Close</button>
+        <div class="action-buttons">
+          <button 
+            class="delete-btn" 
+            (click)="deleteUserFromDetail()"
+            [disabled]="isDeleting"
+          >
+            <span *ngIf="isDeleting" class="small-spinner"></span>
+            <span *ngIf="!isDeleting">Delete</span>
+          </button>
+          <button 
+            class="edit-btn" 
+            (click)="openEditModal()"
+            [disabled]="isUpdating"
+          >
+            Edit User
+          </button>
+        </div>
       </div>
     </div>
   </div>
+
   <div class="search-box">
     <input 
       type="text" 
-      placeholder="Search by name..." 
+      placeholder="Search by name or role..." 
       [(ngModel)]="searchText"
       (input)="searchUsers()"
       [disabled]="isLoading"
@@ -111,7 +156,6 @@
           </div>
         </td>
       </tr>
-
       <tr *ngIf="!isLoading && filteredUsers.length === 0">
         <td colspan="4" class="no-data">
           <div class="no-data-content">
@@ -124,34 +168,39 @@
         </td>
       </tr>
       <ng-container *ngIf="!isLoading">
-        <tr *ngFor="let user of filteredUsers" (click)="viewUserDetails(user)" style="cursor: pointer;">
+        <tr *ngFor="let user of filteredUsers" 
+            class="user-row" 
+            (click)="viewUserDetails(user)">
           <td>{{ user.id }}</td>
-          <td>{{ user.name }}</td>
-          <td>{{ user.role }}</td>
+          <td>
+            <span class="user-name">{{ user.name }}</span>
+          </td>
+          <td>
+            <span class="role-tag">{{ user.role }}</span>
+          </td>
           <td (click)="$event.stopPropagation()">
-            <button 
-              (click)="deleteUser(user.id)" 
-              class="delete-btn"
-              [disabled]="isDeleting"
-            >
-              <span *ngIf="isDeleting" class="small-spinner"></span>
-              <span *ngIf="!isDeleting">Delete</span>
-            </button>
+            <div class="action-buttons">
+              <button 
+                (click)="editUserDirectly(user, $event)" 
+                class="edit-btn small"
+                [disabled]="isUpdating"
+                title="Edit user"
+              >
+                Edit
+              </button>
+              <button 
+                (click)="deleteUser(user.id, $event)" 
+                class="delete-btn small"
+                [disabled]="isDeleting"
+                title="Delete user"
+              >
+                <span *ngIf="isDeleting" class="small-spinner"></span>
+                <span *ngIf="!isDeleting">Delete</span>
+              </button>
+            </div>
           </td>
         </tr>
       </ng-container>
     </tbody>
   </table>
-
-  <div class="role-filters" *ngIf="!isLoading">
-    <button (click)="filterByRole('Developer')">Developers</button>
-    <button (click)="filterByRole('Designer')">Designers</button>
-    <button (click)="filterByRole('Manager')">Managers</button>
-    <button (click)="loadUsers()">All Users</button>
-  </div>
-
-  <div class="loading-more" *ngIf="isLoading && users.length > 0">
-    <div class="spinner small"></div>
-    <span>Updating list...</span>
-  </div>
 </div>

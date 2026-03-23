@@ -9,6 +9,8 @@
       class="open-modal-btn" 
       (click)="openAddUserModal()"
       [disabled]="isAdding"
+      mat-raised-button
+      color="primary"
     >
       <span class="button-content">
         <span class="plus-icon" *ngIf="!isAdding">+</span>
@@ -30,7 +32,6 @@
   ></app-edit-user>
   <div class="modal-overlay" *ngIf="showUserDetailModal" (click)="closeUserDetail()">
     <div class="modal-content user-detail-modal" (click)="$event.stopPropagation()">
-      
       <div class="modal-header">
         <h2>User Details</h2>
         <button class="close-btn" (click)="closeUserDetail()">×</button>
@@ -103,6 +104,8 @@
             class="delete-btn" 
             (click)="deleteUserFromDetail()"
             [disabled]="isDeleting"
+            mat-raised-button
+            color="warn"
           >
             <span *ngIf="isDeleting" class="small-spinner"></span>
             <span *ngIf="!isDeleting">Delete</span>
@@ -111,6 +114,8 @@
             class="edit-btn" 
             (click)="openEditModal()"
             [disabled]="isUpdating"
+            mat-raised-button
+            color="primary"
           >
             Edit User
           </button>
@@ -119,88 +124,118 @@
     </div>
   </div>
 
-  <div class="search-box">
-    <input 
-      type="text" 
-      placeholder="Search by name or role..." 
-      [(ngModel)]="searchText"
-      (input)="searchUsers()"
-      [disabled]="isLoading"
-    >
-    <button 
-      (click)="sortUsers()"
-      [disabled]="isLoading"
-    >
-      Sort by Name ({{ sortAscending ? 'A to Z' : 'Z to A' }})
-    </button>
+  <div class="search-sort-container">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search users</mat-label>
+      <input 
+        matInput 
+        placeholder="Search by name or role..." 
+        (keyup)="applyFilter($event)"
+        [disabled]="isLoading"
+      >
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+
+    <div class="sort-controls">
+      <button 
+        mat-raised-button 
+        (click)="toggleSortByName()"
+        [disabled]="isLoading"
+        class="sort-button"
+      >
+        <mat-icon>sort_by_alpha</mat-icon>
+        Sort by Name ({{ sortByNameAsc ? 'A to Z' : 'Z to A' }})
+      </button>
+    </div>
   </div>
+
   <div class="error-message" *ngIf="loadingError">
     {{ loadingError }}
-    <button (click)="loadUsers()">Retry</button>
+    <button (click)="loadUsers()" mat-button color="primary">Retry</button>
   </div>
-  <table class="user-table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Role</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr *ngIf="isLoading" class="loading-row">
-        <td colspan="4">
-          <div class="table-loader">
-            <div class="spinner"></div>
-            <span>Fetching users...</span>
+
+  <div class="table-container">
+    <table mat-table [dataSource]="dataSource" matSort class="user-table">
+      
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
+        <td mat-cell *matCellDef="let user">{{ user.id }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+        <td mat-cell *matCellDef="let user">
+          <span class="user-name">{{ user.name }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="role">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Role</th>
+        <td mat-cell *matCellDef="let user">
+          <span class="role-tag">{{ user.role }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let user">
+          <div class="action-buttons">
+            <button 
+              (click)="editUserDirectly(user, $event)" 
+              class="edit-btn small"
+              [disabled]="isUpdating"
+              title="Edit user"
+              mat-icon-button
+              color="primary"
+            >
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button 
+              (click)="viewUserDetails(user)" 
+              class="view-btn small"
+              title="View details"
+              mat-icon-button
+            >
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button 
+              (click)="deleteUser(user.id, $event)" 
+              class="delete-btn small"
+              [disabled]="isDeleting"
+              title="Delete user"
+              mat-icon-button
+              color="warn"
+            >
+              <mat-icon *ngIf="!isDeleting">delete</mat-icon>
+              <mat-spinner *ngIf="isDeleting" diameter="20"></mat-spinner>
+            </button>
           </div>
         </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+          class="user-row"
+          (click)="viewUserDetails(row)">
       </tr>
-      <tr *ngIf="!isLoading && filteredUsers.length === 0">
-        <td colspan="4" class="no-data">
+
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell no-data" [attr.colspan]="displayedColumns.length">
           <div class="no-data-content">
-            <span class="no-data-icon"></span>
+            <mat-icon>people_outline</mat-icon>
             <p>No users found</p>
-            <button class="add-first-btn" (click)="openAddUserModal()">
+            <button class="add-first-btn" (click)="openAddUserModal()" mat-raised-button color="primary">
               Add First User
             </button>
           </div>
         </td>
       </tr>
-      <ng-container *ngIf="!isLoading">
-        <tr *ngFor="let user of filteredUsers" 
-            class="user-row" 
-            (click)="viewUserDetails(user)">
-          <td>{{ user.id }}</td>
-          <td>
-            <span class="user-name">{{ user.name }}</span>
-          </td>
-          <td>
-            <span class="role-tag">{{ user.role }}</span>
-          </td>
-          <td (click)="$event.stopPropagation()">
-            <div class="action-buttons">
-              <button 
-                (click)="editUserDirectly(user, $event)" 
-                class="edit-btn small"
-                [disabled]="isUpdating"
-                title="Edit user"
-              >
-                Edit
-              </button>
-              <button 
-                (click)="deleteUser(user.id, $event)" 
-                class="delete-btn small"
-                [disabled]="isDeleting"
-                title="Delete user"
-              >
-                <span *ngIf="isDeleting" class="small-spinner"></span>
-                <span *ngIf="!isDeleting">Delete</span>
-              </button>
-            </div>
-          </td>
-        </tr>
-      </ng-container>
-    </tbody>
-  </table>
+    </table>
+    <mat-paginator 
+      [pageSizeOptions]="pageSizeOptions" 
+      [pageSize]="pageSize"
+      showFirstLastButtons
+      aria-label="Select page of users">
+    </mat-paginator>
+  </div>
 </div>

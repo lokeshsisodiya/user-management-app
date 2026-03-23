@@ -14,13 +14,19 @@
           id="name"
           type="text" 
           [(ngModel)]="newUser.name" 
-          placeholder="Enter user name"
+          placeholder="Enter user name (letters only)"
           (keyup.enter)="addUser()"
           (blur)="validateField('name')"
+          (input)="validateNameInput($event)"
+          (keydown)="preventInvalidKeys($event)"
           autofocus
+          maxlength="100"
         >
         <small class="error-message" *ngIf="showNameError()">
-          Name is required
+          {{ getNameErrorMessage() }}
+        </small>
+        <small class="char-counter" *ngIf="newUser.name">
+          {{ newUser.name.length }}/100
         </small>
       </div>
 
@@ -46,7 +52,7 @@
       </div>
 
       <div class="form-error-summary" *ngIf="isFormInvalid() && isFormTouched">
-        <p>Please fill all required fields</p>
+        <p>Please fill all required fields correctly</p>
       </div>
     </div>
 

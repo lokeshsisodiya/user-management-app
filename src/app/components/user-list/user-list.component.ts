@@ -1,5 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { UserService } from '../../services/user.service';
+import { MatTableDataSource } from '@angular/material/table';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatSort, Sort } from '@angular/material/sort';
+import { LiveAnnouncer } from '@angular/cdk/a11y';
 
 export interface User {
   id: number;
@@ -13,13 +17,16 @@ export interface User {
   selector: 'app-user-list',
   standalone: false,
   templateUrl: './user-list.component.html',
-  styleUrl: './user-list.component.css'
+  styleUrls: ['./user-list.component.css']
 })
-export class UserListComponent implements OnInit {
-  users: any[] = [];
-  filteredUsers: any[] = [];
+export class UserListComponent implements OnInit, AfterViewInit {
+  displayedColumns: string[] = ['id', 'name', 'role', 'actions'];
+  dataSource: MatTableDataSource<User> = new MatTableDataSource<User>([]);
+  
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
+
   searchText: string = '';
-  sortAscending: boolean = true;
   showAddUserModal: boolean = false;
   showUserDetailModal: boolean = false;
   selectedUser: User | null = null;
@@ -35,10 +42,45 @@ export class UserListComponent implements OnInit {
   isDeleting: boolean = false;
   loadingError: string = '';
 
-  constructor(private userService: UserService) { }
+  // Pagination options
+  pageSizeOptions: number[] = [5, 10, 25, 50];
+  pageSize: number = 10;
+
+  // Custom sort properties
+  sortByNameAsc: boolean = true;
+  isCustomSortActive: boolean = false;
+  originalData: User[] = [];
+
+  constructor(
+    private userService: UserService,
+    private liveAnnouncer: LiveAnnouncer
+  ) { }
 
   ngOnInit(): void {
     this.loadUsers();
+  }
+
+  ngAfterViewInit(): void {
+    if (this.paginator) {
+      this.dataSource.paginator = this.paginator;
+    }
+    if (this.sort) {
+      this.dataSource.sort = this.sort;
+      this.sort.sortChange.subscribe((sort: Sort) => {
+        if (sort.active !== 'name') {
+          this.isCustomSortActive = false;
+        }
+      });
+    }
+    
+    this.dataSource.sortingDataAccessor = (item: User, property: string): string | number => {
+      switch(property) {
+        case 'role': 
+          return item.role.toLowerCase();
+        default: 
+          return (item as any)[property];
+      }
+    };
   }
 
   loadUsers(): void {
@@ -46,17 +88,79 @@ export class UserListComponent implements OnInit {
     this.loadingError = '';
     
     this.userService.getUsers().subscribe({
-      next: (users) => {
-        this.users = users;
-        this.filteredUsers = [...users];
+      next: (users: User[]) => {
+        this.originalData = [...users];
+        this.dataSource.data = users;
         this.isLoading = false;
+        this.isCustomSortActive = false;
+        setTimeout(() => {
+          if (this.paginator) {
+            this.dataSource.paginator = this.paginator;
+          }
+          if (this.sort) {
+            this.dataSource.sort = this.sort;
+          }
+        });
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading users:', error);
         this.isLoading = false;
         this.loadingError = 'Failed to load users. Please try again.';
       }
     });
+  }
+
+  applyFilter(event: Event): void {
+    const filterValue = (event.target as HTMLInputElement).value;
+    this.dataSource.filter = filterValue.trim().toLowerCase();
+
+    if (this.dataSource.paginator) {
+      this.dataSource.paginator.firstPage();
+    }
+  }
+  toggleSortByName(): void {
+    this.sortByNameAsc = !this.sortByNameAsc;
+    this.isCustomSortActive = true;
+    let dataToSort = this.dataSource.filteredData.length > 0 
+      ? [...this.dataSource.filteredData] 
+      : [...this.dataSource.data];
+    dataToSort.sort((a, b) => {
+      const nameA = a.name.toLowerCase();
+      const nameB = b.name.toLowerCase();
+      
+      if (this.sortByNameAsc) {
+        return nameA.localeCompare(nameB);
+      } else {
+        return nameB.localeCompare(nameA);
+      }
+    });
+    this.dataSource.data = dataToSort;
+    if (this.dataSource.paginator) {
+      this.dataSource.paginator.firstPage();
+    }
+    this.liveAnnouncer.announce(
+      `Users sorted by name ${this.sortByNameAsc ? 'A to Z' : 'Z to A'}`, 
+      'polite'
+    );
+  }
+
+  clearSort(): void {
+    if (!this.isCustomSortActive) return;
+    const filteredOriginal = this.originalData.filter(user => {
+      const searchTerm = this.dataSource.filter;
+      if (!searchTerm) return true;
+      
+      return user.name.toLowerCase().includes(searchTerm) ||
+             user.role.toLowerCase().includes(searchTerm);
+    });
+    
+    this.dataSource.data = filteredOriginal;
+    this.isCustomSortActive = false;
+    if (this.sort) {
+      this.sort.active = '';
+      this.sort.direction = '';
+    }
+    this.liveAnnouncer.announce('Sort cleared, returning to original order', 'polite');
   }
 
   viewUserDetails(user: User): void {
@@ -69,13 +173,13 @@ export class UserListComponent implements OnInit {
     this.detailError = '';
     
     this.userService.getUserById(userId).subscribe({
-      next: (user) => {
+      next: (user: User | undefined) => {
         if (user) {
           this.selectedUser = user;
         }
         this.isLoadingDetail = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error loading user details:', error);
         this.isLoadingDetail = false;
         this.detailError = 'Failed to load user details.';
@@ -88,6 +192,7 @@ export class UserListComponent implements OnInit {
     this.selectedUser = null;
     this.detailError = '';
   }
+
   openEditModal(): void {
     if (this.selectedUser) {
       this.userToEdit = { ...this.selectedUser };
@@ -95,7 +200,6 @@ export class UserListComponent implements OnInit {
       this.showUserDetailModal = false;
     }
   }
-
 
   editUserDirectly(user: User, event: Event): void {
     event.stopPropagation();
@@ -116,19 +220,18 @@ export class UserListComponent implements OnInit {
     this.editError = '';
     
     this.userService.updateUser(this.userToEdit.id, updatedData).subscribe({
-      next: (success) => {
+      next: (success: boolean) => {
         if (success) {
           this.loadUsers();
           this.isUpdating = false;
           this.closeEditModal();
-          
-          console.log('User updated successfully');
+          this.liveAnnouncer.announce('User updated successfully', 'polite');
         } else {
           this.isUpdating = false;
           this.editError = 'Failed to update user.';
         }
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error updating user:', error);
         this.isUpdating = false;
         this.editError = 'An error occurred. Please try again.';
@@ -138,25 +241,8 @@ export class UserListComponent implements OnInit {
 
   deleteUserFromDetail(): void {
     if (!this.selectedUser) return;
-    
-    if (confirm('Are you sure you want to delete this user?')) {
-      this.isDeleting = true;
-      
-      this.userService.deleteUser(this.selectedUser.id).subscribe({
-        next: (success) => {
-          if (success) {
-            this.loadUsers();
-            this.closeUserDetail();
-          }
-          this.isDeleting = false;
-        },
-        error: (error) => {
-          console.error('Error deleting user:', error);
-          this.isDeleting = false;
-          alert('Failed to delete user.');
-        }
-      });
-    }
+    const fakeEvent = new Event('click');
+    this.deleteUser(this.selectedUser.id, fakeEvent);
   }
 
   deleteUser(id: number, event: Event): void {
@@ -166,13 +252,14 @@ export class UserListComponent implements OnInit {
       this.isDeleting = true;
       
       this.userService.deleteUser(id).subscribe({
-        next: (success) => {
+        next: (success: boolean) => {
           if (success) {
             this.loadUsers();
+            this.liveAnnouncer.announce('User deleted successfully', 'assertive');
           }
           this.isDeleting = false;
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('Error deleting user:', error);
           this.isDeleting = false;
           alert('Failed to delete user. Please try again.');
@@ -181,49 +268,28 @@ export class UserListComponent implements OnInit {
     }
   }
 
-  openAddUserModal() {
+  openAddUserModal(): void {
     this.showAddUserModal = true;
   }
 
-  closeAddUserModal() {
+  closeAddUserModal(): void {
     this.showAddUserModal = false;
   }
 
-  addNewUser(userData: any) {
+  addNewUser(userData: any): void {
     this.isAdding = true;
     
     this.userService.addUser(userData).subscribe({
-      next: (newUser) => {
+      next: (newUser: User) => {
         this.loadUsers();
         this.isAdding = false;
         this.closeAddUserModal();
+        this.liveAnnouncer.announce('User added successfully', 'polite');
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error adding user:', error);
         this.isAdding = false;
         alert('Failed to add user. Please try again.');
-      }
-    });
-  }
-
-  searchUsers(): void {
-    if (this.searchText) {
-      this.filteredUsers = this.users.filter(user => 
-        user.name.toLowerCase().includes(this.searchText.toLowerCase()) ||
-        user.role.toLowerCase().includes(this.searchText.toLowerCase())
-      );
-    } else {
-      this.filteredUsers = [...this.users];
-    }
-  }
-
-  sortUsers(): void {
-    this.sortAscending = !this.sortAscending;
-    this.filteredUsers.sort((a, b) => {
-      if (this.sortAscending) {
-        return a.name.localeCompare(b.name);
-      } else {
-        return b.name.localeCompare(a.name);
       }
     });
   }

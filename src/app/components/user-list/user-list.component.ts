@@ -37,7 +37,8 @@ export class UserListComponent implements OnInit, AfterViewInit {
   userToEdit: User | null = null;
   isUpdating: boolean = false;
   editError: string = '';
-
+  isEmptyState: boolean = false;
+  totalUsers: number = 0; 
   isLoading: boolean = false;
   isAdding: boolean = false;
   isDeleting: boolean = false;
@@ -92,6 +93,8 @@ export class UserListComponent implements OnInit, AfterViewInit {
         this.originalData = [...users];
         this.dataSource.data = users;
         this.isLoading = false;
+        this.totalUsers = users.length;
+        this.isEmptyState = users.length === 0;
         this.isCustomSortActive = false;
         setTimeout(() => {
           if (this.paginator) {
@@ -321,4 +324,17 @@ export class UserListComponent implements OnInit, AfterViewInit {
   navigateToAddUser(): void {
     this.router.navigate(['/add-user']);
   }
+
+clearSearch(): void {
+  const searchInput = document.querySelector('.search-field input') as HTMLInputElement;
+  if (searchInput) {
+    searchInput.value = '';
+  }
+  this.dataSource.filter = '';
+  if (this.dataSource.paginator) {
+    this.dataSource.paginator.firstPage();
+  }
+  
+  this.liveAnnouncer.announce('Search cleared', 'polite');
+}
 }

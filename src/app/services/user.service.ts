@@ -23,23 +23,22 @@ export class UserService {
 
   private initializeStorage(): void {
     if (!localStorage.getItem(this.storageKey)) {
-      const defaultUsers = [
-        { id: 1, name: 'Rahul Sharma', role: 'Developer', addedOn: new Date().toLocaleString() },
-        { id: 2, name: 'Priya Patel', role: 'Designer', addedOn: new Date().toLocaleString() },
-        { id: 3, name: 'Amit Kumar', role: 'Manager', addedOn: new Date().toLocaleString() },
-        { id: 4, name: 'Neha Singh', role: 'Tester', addedOn: new Date().toLocaleString() },
-        { id: 5, name: 'Vikram Verma', role: 'Developer', addedOn: new Date().toLocaleString() }
-      ];
+      const defaultUsers: User[] = [];    
       localStorage.setItem(this.storageKey, JSON.stringify(defaultUsers));
-      localStorage.setItem(this.lastIdKey, '5');
+      localStorage.setItem(this.lastIdKey, '0');
     }
   }
 
   private getNextId(): number {
     const lastId = localStorage.getItem(this.lastIdKey);
-    const nextId = lastId ? parseInt(lastId) + 1 : 6;
+    const nextId = lastId ? parseInt(lastId) + 1 : 1;
     localStorage.setItem(this.lastIdKey, nextId.toString());
     return nextId;
+  }
+    hasUsers(): Observable<boolean> {
+    return this.getUsers().pipe(
+      map(users => users.length > 0)
+    );
   }
 
   getUsers(): Observable<User[]> {

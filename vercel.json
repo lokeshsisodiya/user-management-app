@@ -1,0 +1,21 @@
+{
+  "routes": [
+    {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/user-list",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/add-user",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/[^.]+",
+      "dest": "/index.html",
+      "status": 200
+    }
+  ]
+}

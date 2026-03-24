@@ -1,11 +1,25 @@
-<div class="modal-overlay" (click)="close()">
-  <div class="modal-content" (click)="$event.stopPropagation()">
-    <div class="modal-header">
+
+<div class="add-user-page">
+  <div class="page-container">
+    <div class="page-header">
       <h2>Add New User</h2>
-      <button class="close-btn" (click)="close()">×</button>
+      <button class="back-btn" (click)="close()" mat-button>
+        <mat-icon>arrow_back</mat-icon>
+        Back to Users
+      </button>
     </div>
 
-    <div class="modal-body">
+    <div class="form-container">
+      <div class="loading-overlay" *ngIf="isAdding">
+        <div class="spinner"></div>
+        <p>Adding user...</p>
+      </div>
+
+      <div class="error-message" *ngIf="errorMessage">
+        {{ errorMessage }}
+        <button (click)="addUser()" mat-button color="primary">Retry</button>
+      </div>
+
       <div class="form-group" [ngClass]="{'has-error': showNameError()}">
         <label for="name">
           Full Name <span class="required-star">*</span>
@@ -21,6 +35,7 @@
           (keydown)="preventInvalidKeys($event)"
           autofocus
           maxlength="100"
+          [disabled]="isAdding"
         >
         <small class="error-message" *ngIf="showNameError()">
           {{ getNameErrorMessage() }}
@@ -38,6 +53,7 @@
           id="role" 
           [(ngModel)]="newUser.role"
           (blur)="validateField('role')"
+          [disabled]="isAdding"
         >
           <option value="">Select Role</option>
           <option value="Developer">Developer</option>
@@ -54,17 +70,22 @@
       <div class="form-error-summary" *ngIf="isFormInvalid() && isFormTouched">
         <p>Please fill all required fields correctly</p>
       </div>
-    </div>
 
-    <div class="modal-footer">
-      <button class="cancel-btn" (click)="close()">Cancel</button>
-      <button 
-        class="save-btn" 
-        (click)="addUser()"
-        [disabled]="!isFormValid()"
-      >
-        Create User
-      </button>
+      <div class="form-actions">
+        <button class="cancel-btn" (click)="close()" [disabled]="isAdding" mat-button>
+          Cancel
+        </button>
+        <button 
+          class="save-btn" 
+          (click)="addUser()"
+          [disabled]="!isFormValid() || isAdding"
+          mat-raised-button
+          color="primary"
+        >
+          <span *ngIf="!isAdding">Create User</span>
+          <span *ngIf="isAdding">Creating...</span>
+        </button>
+      </div>
     </div>
   </div>
 </div>

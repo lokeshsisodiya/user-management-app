@@ -5,6 +5,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatSort, Sort } from '@angular/material/sort';
 import { LiveAnnouncer } from '@angular/cdk/a11y';
 
+import { Router } from '@angular/router';
 export interface User {
   id: number;
   name: string;
@@ -42,18 +43,17 @@ export class UserListComponent implements OnInit, AfterViewInit {
   isDeleting: boolean = false;
   loadingError: string = '';
 
-  // Pagination options
   pageSizeOptions: number[] = [5, 10, 25, 50];
   pageSize: number = 10;
 
-  // Custom sort properties
   sortByNameAsc: boolean = true;
   isCustomSortActive: boolean = false;
   originalData: User[] = [];
 
   constructor(
     private userService: UserService,
-    private liveAnnouncer: LiveAnnouncer
+    private liveAnnouncer: LiveAnnouncer,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -317,5 +317,8 @@ export class UserListComponent implements OnInit, AfterViewInit {
     } catch (e) {
       return 'Unknown';
     }
+  }
+  navigateToAddUser(): void {
+    this.router.navigate(['/add-user']);
   }
 }

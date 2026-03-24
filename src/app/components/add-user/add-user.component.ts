@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-
+import { UserService } from '../../services/user.service';
+import { Router } from '@angular/router';
 @Component({
   selector: 'app-add-user',
   standalone: false,
@@ -7,8 +8,6 @@ import { Component, EventEmitter, Output } from '@angular/core';
   styleUrl: './add-user.component.css'
 })
 export class AddUserComponent {
-  @Output() userAdded = new EventEmitter<any>();
-  @Output() closeModal = new EventEmitter<void>();
 
   newUser = {
     name: '',
@@ -19,6 +18,8 @@ export class AddUserComponent {
     name: false,
     role: false
   };
+    isAdding: boolean = false;
+  errorMessage: string = '';
   private readonly nameRegex = /^[A-Za-z\s.-]+$/;
   private readonly allowedCharsRegex = /^[A-Za-z\s.-]*$/;
   private readonly allowedSpecialKeys = [
@@ -26,6 +27,11 @@ export class AddUserComponent {
     'Home', 'End', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
     'Shift', 'Control', 'Alt', 'CapsLock', 'Meta'
   ];
+
+    constructor(
+    private userService: UserService,
+    private router: Router
+  ) { }
 
   validateNameInput(event: any): void {
     const input = event.target;
@@ -41,7 +47,6 @@ export class AddUserComponent {
   }
 
   preventInvalidKeys(event: KeyboardEvent): void {
-    // Allow control keys and navigation keys
     if (this.allowedSpecialKeys.includes(event.key)) {
       return;
     }
@@ -118,22 +123,38 @@ export class AddUserComponent {
     return !this.isFormValid();
   }
 
-  addUser() {
+    addUser() {
     this.touchedFields.name = true;
     this.touchedFields.role = true;
     
     if (this.isFormValid()) {
+      this.isAdding = true;
+      this.errorMessage = '';
+      
       const userData = {
         ...this.newUser,
         name: this.newUser.name.replace(/\s+/g, ' ').trim()
       };
-      this.userAdded.emit(userData);
-      this.resetForm();
-      this.closeModal.emit();
+      
+      this.userService.addUser(userData).subscribe({
+        next: (newUser) => {
+          this.isAdding = false;
+          this.router.navigate(['/users']);
+        },
+        error: (error) => {
+          console.error('Error adding user:', error);
+          this.isAdding = false;
+          this.errorMessage = 'Failed to add user. Please try again.';
+        }
+      });
     }
   }
 
-  resetForm() {
+    close() {
+    this.router.navigate(['/users']);
+  }
+
+    resetForm() {
     this.newUser = {
       name: '',
       role: ''
@@ -142,10 +163,6 @@ export class AddUserComponent {
       name: false,
       role: false
     };
-  }
-
-  close() {
-    this.resetForm();
-    this.closeModal.emit();
+    this.errorMessage = '';
   }
 }

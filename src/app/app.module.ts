@@ -19,12 +19,14 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { A11yModule } from '@angular/cdk/a11y';
+import { NavigationComponent } from './components/navigation/navigation.component';
 @NgModule({
   declarations: [
     AppComponent,
     UserListComponent,
     AddUserComponent,
     EditUserComponent,
+    NavigationComponent,
   ],
   imports: [
     BrowserModule,

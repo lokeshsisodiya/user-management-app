@@ -1,0 +1,44 @@
+<nav class="navigation">
+  <div class="nav-container">
+    <div class="nav-brand">
+      <a routerLink="/users" class="brand-link">
+        <mat-icon class="brand-icon">admin_panel_settings</mat-icon>
+        <span class="brand-text">User Management System</span>
+      </a>
+    </div>
+    <div class="nav-menu desktop-menu">
+      <a 
+        *ngFor="let item of menuItems"
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{exact: true}"
+        class="nav-link"
+      >
+        <mat-icon>{{ item.icon }}</mat-icon>
+        <span>{{ item.label }}</span>
+      </a>
+    </div>
+
+
+    <button 
+      class="mobile-menu-btn" 
+      (click)="toggleMobileMenu()"
+      [class.active]="mobileMenuOpen"
+    >
+      <mat-icon>menu</mat-icon>
+    </button>
+    <div class="mobile-menu" *ngIf="mobileMenuOpen" (click)="closeMobileMenu()">
+      <a 
+        *ngFor="let item of menuItems"
+        [routerLink]="item.path"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{exact: true}"
+        class="mobile-nav-link"
+        (click)="closeMobileMenu()"
+      >
+        <mat-icon>{{ item.icon }}</mat-icon>
+        <span>{{ item.label }}</span>
+      </a>
+    </div>
+  </div>
+</nav>

@@ -4,21 +4,6 @@
     <div class="spinner"></div>
     <p>Loading users...</p>
   </div>
-  <div class="add-user-section">
-    <button 
-      class="open-modal-btn" 
-      (click)="openAddUserModal()"
-      [disabled]="isAdding"
-      mat-raised-button
-      color="primary"
-    >
-      <span class="button-content">
-        <span class="plus-icon" *ngIf="!isAdding">+</span>
-        <span class="button-spinner" *ngIf="isAdding"></span>
-        {{ isAdding ? 'Adding...' : 'Add New User' }}
-      </span>
-    </button>
-  </div>
   <app-add-user 
     *ngIf="showAddUserModal"
     (userAdded)="addNewUser($event)"
